@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "topic-suggestion.json",
+  "title": "TopicSuggestion",
+  "description": "选题建议结构。包含一组选题，每个选题含标题、切入角度、热度评分与参考引用。",
+  "type": "object",
+  "properties": {
+    "suggestions": {
+      "type": "array",
+      "description": "选题建议列表",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "选题标题",
+            "minLength": 1
+          },
+          "angle": {
+            "type": "string",
+            "description": "切入角度（如对比分析、趋势解读、实操指南）"
+          },
+          "hotScore": {
+            "type": "integer",
+            "description": "热度评分（0-100）",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "references": {
+            "type": "array",
+            "description": "参考引用（文档ID或链接）",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": ["title", "angle", "hotScore", "references"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["suggestions"],
+  "additionalProperties": false
+}

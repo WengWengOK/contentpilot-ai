@@ -1,0 +1,18 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: content-ops-config
+  labels:
+    app: content-ops-ai
+data:
+  # Redis configuration
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+
+  # Qdrant vector database configuration
+  QDRANT_HOST: "qdrant"
+  QDRANT_PORT: "6333"
+
+  # Spring profile
+  SPRING_PROFILES_ACTIVE: "prod"

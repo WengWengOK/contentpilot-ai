@@ -1,0 +1,54 @@
+spring:
+  profiles:
+    active: test
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+    show-sql: false
+  flyway:
+    enabled: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  ai:
+    openai:
+      api-key: test-key
+      base-url: http://localhost:8080
+      chat:
+        options:
+          model: gpt-4o
+          temperature: 0.7
+      embedding:
+        options:
+          model: text-embedding-3-small
+    vectorstore:
+      qdrant:
+        host: localhost
+        port: 6333
+        collection-name: content_ops_test
+        use-tls: false
+
+contentops:
+  cache:
+    similarity-threshold: 0.92
+    ttl-hours: 24
+  bm25:
+    ts-config: simple
+  rerank:
+    endpoint: http://localhost:8000/rerank
+  tenant:
+    default-quota: 100000
+
+logging:
+  level:
+    com.contentops.ai: DEBUG
+    org.springframework.web: DEBUG

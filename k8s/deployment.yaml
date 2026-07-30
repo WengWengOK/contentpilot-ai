@@ -1,0 +1,142 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: content-ops-ai
+  labels:
+    app: content-ops-ai
+    component: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: content-ops-ai
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: content-ops-ai
+        component: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      containers:
+        - name: content-ops-ai
+          image: content-ops-ai:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          env:
+            # --- Database (Secret) ---
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: content-ops-secret
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: content-ops-secret
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: content-ops-secret
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: content-ops-secret
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: content-ops-secret
+                  key: DB_PASSWORD
+            # --- Redis (ConfigMap) ---
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: content-ops-config
+                  key: REDIS_HOST
+            - name: REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: content-ops-config
+                  key: REDIS_PORT
+            # --- Qdrant (ConfigMap) ---
+            - name: QDRANT_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: content-ops-config
+                  key: QDRANT_HOST
+            - name: QDRANT_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: content-ops-config
+                  key: QDRANT_PORT
+            # --- Spring Profile (ConfigMap) ---
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: content-ops-config
+                  key: SPRING_PROFILES_ACTIVE
+            # --- OpenAI (Secret) ---
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: content-ops-secret
+                  key: OPENAI_API_KEY
+            - name: OPENAI_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: content-ops-secret
+                  key: OPENAI_BASE_URL
+            # --- Langfuse (Secret) ---
+            - name: LANGFUSE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: content-ops-secret
+                  key: LANGFUSE_HOST
+            - name: LANGFUSE_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: content-ops-secret
+                  key: LANGFUSE_PUBLIC_KEY
+            - name: LANGFUSE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: content-ops-secret
+                  key: LANGFUSE_SECRET_KEY
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+      terminationGracePeriodSeconds: 60

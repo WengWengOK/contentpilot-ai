@@ -1,0 +1,227 @@
+# =============================================================================
+# ContentOps AI 平台主配置文件
+# =============================================================================
+
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  application:
+    name: content-ops-ai
+
+  # ---------------------------------------------------------------------------
+  # 数据库连接 (PostgreSQL 16)
+  # ---------------------------------------------------------------------------
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/contentops}
+    username: ${DB_USER:contentops}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # ---------------------------------------------------------------------------
+  # JPA / Hibernate
+  # ---------------------------------------------------------------------------
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        jdbc.batch_size: 50
+
+  # ---------------------------------------------------------------------------
+  # Flyway 数据库迁移
+  # ---------------------------------------------------------------------------
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: true
+
+  # ---------------------------------------------------------------------------
+  # Redis
+  # ---------------------------------------------------------------------------
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+
+  # ---------------------------------------------------------------------------
+  # Spring AI - OpenAI 兼容协议
+  # ---------------------------------------------------------------------------
+  ai:
+    openai:
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      api-key: ${OPENAI_API_KEY:sk-placeholder}
+      chat:
+        model: gpt-4o
+        temperature: 0.7
+        max-tokens: 4096
+      embedding:
+        model: text-embedding-3-small
+    # Spring AI - Qdrant 向量库
+    vectorstore:
+      qdrant:
+        host: ${QDRANT_HOST:localhost}
+        port: ${QDRANT_PORT:6333}
+        collection-name: ${QDRANT_COLLECTION:knowledge_vectors}
+        use-tls: false
+        initialize-schema: false
+
+# ---------------------------------------------------------------------------
+# Actuator 端点暴露
+# ---------------------------------------------------------------------------
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,configprops,loggers
+  endpoint:
+    health:
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# =============================================================================
+# 自定义配置项 contentops.*
+# =============================================================================
+contentops:
+  # ---------------------------------------------------------------------------
+  # 多租户配置
+  # ---------------------------------------------------------------------------
+  tenant:
+    # 默认租户编码 (请求未携带 X-Tenant-Id 时使用)
+    default-tenant-code: default
+    # 租户隔离模式: schema (按 Schema) / row (按行 tenant_id 字段)
+    isolation-mode: row
+    # 是否在请求未指定租户时拒绝访问
+    strict-mode: false
+
+  # ---------------------------------------------------------------------------
+  # 语义缓存配置
+  # ---------------------------------------------------------------------------
+  cache:
+    # 语义相似度阈值 (cosine, 高于此值则命中缓存)
+    similarity-threshold: 0.92
+    # 缓存 TTL (小时)
+    ttl-hours: 24
+    # 缓存集合名称 (Qdrant 中的 collection)
+    collection-name: semantic_cache
+    # 缓存清理任务 cron (每天 03:00)
+    eviction-cron: "0 0 3 * * ?"
+
+  # ---------------------------------------------------------------------------
+  # 限流配置
+  # ---------------------------------------------------------------------------
+  ratelimit:
+    # 是否启用 Token 级限流
+    enabled: true
+    # 默认每日 Token 配额 (租户未配置 daily_quota 时使用)
+    default-daily-quota: 100000
+    # 配额重置 cron (每天 00:00)
+    quota-reset-cron: "0 0 0 * * ?"
+    # 单次请求最大 Token 数 (超过则拒绝)
+    max-tokens-per-request: 8000
+
+  # ---------------------------------------------------------------------------
+  # 模型降级链配置
+  # 默认: GPT-4o -> DeepSeek -> Qwen-Plus
+  # ---------------------------------------------------------------------------
+  fallback:
+    endpoints:
+      - name: gpt-4o
+        base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+        api-key: ${OPENAI_API_KEY:sk-placeholder}
+        model: gpt-4o
+        timeout-seconds: 30
+        max-retries: 3
+        priority: 1
+      - name: deepseek
+        base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+        api-key: ${DEEPSEEK_API_KEY:sk-placeholder}
+        model: deepseek-chat
+        timeout-seconds: 20
+        max-retries: 2
+        priority: 2
+      - name: qwen-plus
+        base-url: ${DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
+        api-key: ${DASHSCOPE_API_KEY:sk-placeholder}
+        model: qwen-plus
+        timeout-seconds: 15
+        max-retries: 1
+        priority: 3
+
+  # ---------------------------------------------------------------------------
+  # 检索增强配置 (BM25 + 向量混合检索)
+  # ---------------------------------------------------------------------------
+  bm25:
+    # PostgreSQL 全文检索 ts_config
+    ts-config: simple
+  rerank:
+    # Cross-Encoder 重排序服务端点
+    endpoint: ${RERANK_ENDPOINT:http://localhost:8000/rerank}
+  qdrant:
+    # 业务层 Qdrant 集合名称 (与 spring.ai.vectorstore.qdrant.collection-name 对齐)
+    collection: knowledge_vectors
+
+# =============================================================================
+# Resilience4j 熔断器配置 (针对模型调用)
+# CircuitBreakerManager 会按端点名称程序化注册熔断器,
+# 此处提供全局默认配置参考
+# =============================================================================
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        failure-rate-threshold: 50
+        slow-call-rate-threshold: 60
+        slow-call-duration-threshold: 20s
+        wait-duration-in-open-state: 30s
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        sliding-window-type: COUNT_BASED
+        automatic-transition-from-open-to-half-open-enabled: true
+        record-exceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - org.springframework.web.client.ResourceAccessException
+  retry:
+    configs:
+      default:
+        max-attempts: 3
+        wait-duration: 2s
+        exponential-backoff-multiplier: 1.5
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 60s
+        cancel-running-future: true
+
+# =============================================================================
+# 日志配置
+# =============================================================================
+logging:
+  level:
+    root: INFO
+    com.contentops.ai: DEBUG
+    org.springframework.ai: INFO
+    org.hibernate.SQL: WARN
+    org.flywaydb: INFO

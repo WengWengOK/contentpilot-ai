@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "content-outline.json",
+  "title": "ContentOutline",
+  "description": "内容大纲结构。包含标题、章节列表与关键词列表。",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "内容标题",
+      "minLength": 1
+    },
+    "sections": {
+      "type": "array",
+      "description": "章节列表",
+      "items": {
+        "type": "object",
+        "properties": {
+          "heading": {
+            "type": "string",
+            "description": "章节标题",
+            "minLength": 1
+          },
+          "summary": {
+            "type": "string",
+            "description": "章节摘要"
+          }
+        },
+        "required": ["heading", "summary"],
+        "additionalProperties": false
+      }
+    },
+    "keywords": {
+      "type": "array",
+      "description": "关键词列表",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    }
+  },
+  "required": ["title", "sections", "keywords"],
+  "additionalProperties": false
+}
