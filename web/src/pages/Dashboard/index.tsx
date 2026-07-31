@@ -188,9 +188,16 @@ export default function Dashboard() {
 
   return (
     <div className="page-container">
-      <Title level={3} className="page-title">
-        控制台
-      </Title>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+        <img
+          src="/logo.jpg"
+          alt="ContentPilot AI"
+          style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'cover' }}
+        />
+        <Title level={3} className="page-title" style={{ margin: 0 }}>
+          控制台
+        </Title>
+      </div>
       <Paragraph type="secondary">ContentPilot AI 平台运行概览与实时状态.</Paragraph>
 
       <Row gutter={[16, 16]}>

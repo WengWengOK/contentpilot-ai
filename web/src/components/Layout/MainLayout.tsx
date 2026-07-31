@@ -100,13 +100,30 @@ export function MainLayout() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontWeight: 700,
-            fontSize: collapsed ? 18 : 16,
+            gap: 8,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
+            cursor: 'pointer',
           }}
+          onClick={() => navigate('/dashboard')}
         >
-          {collapsed ? 'CP' : 'ContentPilot AI'}
+          <img
+            src="/logo.jpg"
+            alt="ContentPilot AI"
+            style={{
+              width: collapsed ? 32 : 36,
+              height: collapsed ? 32 : 36,
+              borderRadius: 8,
+              objectFit: 'cover',
+              flexShrink: 0,
+              transition: 'width 0.2s, height 0.2s',
+            }}
+          />
+          {!collapsed && (
+            <span style={{ fontWeight: 700, fontSize: 15, letterSpacing: 0.5 }}>
+              ContentPilot AI
+            </span>
+          )}
         </div>
         <Menu
           theme="dark"
