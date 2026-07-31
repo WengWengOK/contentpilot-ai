@@ -1,6 +1,7 @@
 package com.contentops.ai.common.exception;
 
 import com.contentops.ai.common.constant.AiConstants;
+import com.contentops.ai.capability.validation.StructuredOutputException;
 import com.contentops.ai.domain.dto.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +28,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleBusiness(BusinessException ex, HttpServletRequest request) {
         String traceId = request.getHeader(AiConstants.TRACE_HEADER);
         log.warn("Business exception | trace={} | code={} | msg={}", traceId, ex.getCode(), ex.getMessage());
-        return ResponseEntity.status(ex.getCode())
+        // 防御非标准 HTTP 状态码导致 IllegalArgumentException
+        int httpCode = (ex.getCode() >= 100 && ex.getCode() < 600) ? ex.getCode() : 500;
+        return ResponseEntity.status(httpCode)
                 .body(ApiResponse.fail(ex.getCode(), ex.getMessage(), traceId));
     }
 
@@ -37,6 +40,15 @@ public class GlobalExceptionHandler {
         log.warn("Quota exceeded | trace={} | msg={}", traceId, ex.getMessage());
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                 .body(ApiResponse.fail(ex.getCode(), ex.getMessage(), traceId));
+    }
+
+    @ExceptionHandler(StructuredOutputException.class)
+    public ResponseEntity<ApiResponse<Void>> handleStructuredOutput(StructuredOutputException ex,
+                                                                     HttpServletRequest request) {
+        String traceId = request.getHeader(AiConstants.TRACE_HEADER);
+        log.warn("Structured output error | trace={} | msg={}", traceId, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(ApiResponse.fail(422, ex.getMessage(), traceId));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

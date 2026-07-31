@@ -41,11 +41,12 @@ public class ContentController {
                                              @RequestHeader(value = AiConstants.TENANT_HEADER, required = false) String tenantId) {
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("topic", request.getTopic());
-        params.put("keywords", request.getKeywords() == null ? List.of() : request.getKeywords());
+        List<String> keywords = request.getKeywords() == null ? List.of() : request.getKeywords();
+        params.put("keywords", keywords);
         params.put("platform", request.getPlatform());
 
         AgentRequest agentRequest = AgentRequest.builder()
-                .query("content:" + request.getTopic() + ":" + request.getKeywords())
+                .query("content:" + request.getTopic() + ":" + keywords)
                 .tenantId(TenantContext.resolveTenantCode(tenantId))
                 .params(params)
                 .build();

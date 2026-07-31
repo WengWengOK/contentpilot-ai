@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,12 +40,14 @@ public class TopicController {
     public ApiResponse<AgentResponse> suggest(@Valid @RequestBody TopicSuggestRequest request,
                                               @RequestHeader(value = AiConstants.TENANT_HEADER, required = false) String tenantId) {
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put("keywords", request.getKeywords());
-        params.put("platform", request.getPlatform());
+        List<String> keywords = request.getKeywords() == null ? List.of() : request.getKeywords();
+        String platform = request.getPlatform() == null ? "" : request.getPlatform();
+        params.put("keywords", keywords);
+        params.put("platform", platform);
         params.put("count", request.getCount());
 
         AgentRequest agentRequest = AgentRequest.builder()
-                .query("topic:" + request.getKeywords() + ":" + request.getPlatform())
+                .query("topic:" + keywords + ":" + platform)
                 .tenantId(TenantContext.resolveTenantCode(tenantId))
                 .params(params)
                 .build();

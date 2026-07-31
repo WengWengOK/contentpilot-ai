@@ -71,7 +71,7 @@ public class RRFFusionStrategy {
         }
         for (int i = 0; i < results.size(); i++) {
             Document doc = results.get(i);
-            if (doc.getId() == null) {
+            if (doc == null || doc.getId() == null) {
                 continue;
             }
             int rank = i + 1;

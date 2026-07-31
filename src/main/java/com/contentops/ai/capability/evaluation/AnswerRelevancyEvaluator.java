@@ -61,22 +61,22 @@ public class AnswerRelevancyEvaluator {
                 return 0.0;
             }
             // 批量向量化: query + 所有问题一次性 embed, 避免 N+1 次 EmbeddingModel 调用
-            // Spring AI 1.0.0 GA: EmbeddingModel.embed(List<String>) 返回 float[][]
+            // Spring AI 1.0.0 GA: EmbeddingModel.embed(List<String>) 返回 List<float[]>
             List<String> allTexts = new ArrayList<>(questions.size() + 1);
             allTexts.add(query);
             allTexts.addAll(questions);
-            float[][] embeddings = embeddingModel.embed(allTexts);
-            if (embeddings == null || embeddings.length == 0
-                    || embeddings[0] == null || embeddings[0].length == 0) {
+            List<float[]> embeddings = embeddingModel.embed(allTexts);
+            if (embeddings == null || embeddings.isEmpty()
+                    || embeddings.get(0) == null || embeddings.get(0).length == 0) {
                 log.warn("Empty embedding for query, answer relevancy returns 0.0");
                 return 0.0;
             }
-            float[] queryVector = embeddings[0];
+            float[] queryVector = embeddings.get(0);
 
             double sum = 0.0;
             int count = 0;
-            for (int i = 1; i < embeddings.length; i++) {
-                float[] qv = embeddings[i];
+            for (int i = 1; i < embeddings.size(); i++) {
+                float[] qv = embeddings.get(i);
                 double sim = cosineSimilarity(queryVector, qv);
                 if (sim > 0) {
                     sum += sim;

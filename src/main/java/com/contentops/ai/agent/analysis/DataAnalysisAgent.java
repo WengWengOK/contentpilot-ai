@@ -116,8 +116,11 @@ public class DataAnalysisAgent extends BaseAgent {
                         startDate.atStartOfDay(), endDate.plusDays(1).atStartOfDay());
             }
             stats.put("byAgentType", rows);
-            stats.put("totalExecutions", rows.stream().mapToLong(r -> ((Number) r.get("cnt")).longValue()).sum());
-            stats.put("totalTokens", rows.stream().mapToLong(r -> ((Number) r.get("tokens")).longValue()).sum());
+            // null 安全取值: JDBC 驱动可能返回 null 或列名大小写不一致
+            stats.put("totalExecutions", rows.stream()
+                    .mapToLong(r -> toLong(r.get("cnt"))).sum());
+            stats.put("totalTokens", rows.stream()
+                    .mapToLong(r -> toLong(r.get("tokens"))).sum());
         } catch (Exception e) {
             log.warn("查询统计数据失败, 返回空统计: {}", e.getMessage());
             stats.put("byAgentType", List.of());
@@ -154,5 +157,15 @@ public class DataAnalysisAgent extends BaseAgent {
         } catch (Exception e) {
             return String.valueOf(obj);
         }
+    }
+
+    /**
+     * 安全将 Object 转为 long, 处理 null 和不同 Number 子类。
+     */
+    private long toLong(Object val) {
+        if (val instanceof Number n) {
+            return n.longValue();
+        }
+        return 0L;
     }
 }

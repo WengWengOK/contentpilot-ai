@@ -43,7 +43,7 @@ public class PublishController {
         params.put("platforms", request.getPlatforms());
 
         AgentRequest agentRequest = AgentRequest.builder()
-                .query("publish:" + request.getPlatforms() + ":" + Math.abs(request.getContent().hashCode()))
+                .query("publish:" + request.getPlatforms() + ":" + Math.abs((long) request.getContent().hashCode()))
                 .tenantId(TenantContext.resolveTenantCode(tenantId))
                 .params(params)
                 .build();
